@@ -194,32 +194,44 @@ def profile_sidebar():
         value=str(profile.get("name", "")),
     )
 
-    # Keep the two thresholds from overlapping: chill_max must stay strictly
-    # below hype_min so the bands never cross and "Mixed" stays well defined.
-    current_chill = int(profile.get("chill_max_energy", 3))
-    current_hype = int(profile.get("hype_min_energy", 7))
+    # Slider positions live in session_state so they keep their value across
+    # reruns. Seed them from the saved profile the first time through.
+    if "hype_min_slider" not in st.session_state:
+        st.session_state["hype_min_slider"] = int(profile.get("hype_min_energy", 7))
+    if "chill_max_slider" not in st.session_state:
+        st.session_state["chill_max_slider"] = int(profile.get("chill_max_energy", 3))
+
+    # The sliders both span the full 1-10 range. These callbacks run whenever a
+    # slider moves and stop the moved one just short of the other, so the bands
+    # never overlap without the track itself resizing.
+    def clamp_hype_above_chill():
+        if st.session_state["hype_min_slider"] <= st.session_state["chill_max_slider"]:
+            st.session_state["hype_min_slider"] = st.session_state["chill_max_slider"] + 1
+
+    def clamp_chill_below_hype():
+        if st.session_state["chill_max_slider"] >= st.session_state["hype_min_slider"]:
+            st.session_state["chill_max_slider"] = st.session_state["hype_min_slider"] - 1
 
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        # Hype min can't drop to or below the current chill max.
-        hype_floor = current_chill + 1
-        hype_value = max(current_hype, hype_floor)
-        profile["hype_min_energy"] = st.sidebar.slider(
+        st.sidebar.slider(
             "Hype min energy",
-            min_value=hype_floor,
+            min_value=1,
             max_value=10,
-            value=hype_value,
+            key="hype_min_slider",
+            on_change=clamp_hype_above_chill,
         )
     with col2:
-        # Chill max can't reach the hype min just chosen above.
-        chill_ceiling = profile["hype_min_energy"] - 1
-        chill_value = min(current_chill, chill_ceiling)
-        profile["chill_max_energy"] = st.sidebar.slider(
+        st.sidebar.slider(
             "Chill max energy",
             min_value=1,
-            max_value=chill_ceiling,
-            value=chill_value,
+            max_value=10,
+            key="chill_max_slider",
+            on_change=clamp_chill_below_hype,
         )
+
+    profile["hype_min_energy"] = st.session_state["hype_min_slider"]
+    profile["chill_max_energy"] = st.session_state["chill_max_slider"]
 
     genre_options = ["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"]
     saved_genre = profile.get("favorite_genre", genre_options[0])
