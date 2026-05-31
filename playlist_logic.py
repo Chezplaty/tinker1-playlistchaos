@@ -99,9 +99,18 @@ def energy_mood_score(energy: object, profile: Dict[str, object]) -> float:
     return MIXED_SCORE
 
 
-def genre_mood_score(genre: str) -> float:
-    """Score a song's genre on the 0 (chill) .. 1 (hype) mood scale."""
-    return GENRE_MOODS.get(genre, MIXED_SCORE)
+def genre_mood_score(
+    genre: str,
+    genre_moods: Optional[Dict[str, float]] = None,
+) -> float:
+    """Score a song's genre on the 0 (chill) .. 1 (hype) mood scale.
+
+    Uses the supplied genre->mood map (e.g. the user's edited one) and falls
+    back to the built-in defaults when none is given.
+    """
+    if genre_moods is None:
+        genre_moods = GENRE_MOODS
+    return genre_moods.get(genre, MIXED_SCORE)
 
 
 def classify_song(song: Song, profile: Dict[str, object]) -> str:
@@ -112,9 +121,12 @@ def classify_song(song: Song, profile: Dict[str, object]) -> str:
     energy = song.get("energy", 0)
     genre = song.get("genre", "")
 
+    # Prefer the user's edited genre map (kept on the profile) when present.
+    genre_moods = profile.get("genre_moods") or GENRE_MOODS
+
     score = (
         ENERGY_WEIGHT * energy_mood_score(energy, profile)
-        + GENRE_WEIGHT * genre_mood_score(genre)
+        + GENRE_WEIGHT * genre_mood_score(genre, genre_moods)
     )
 
     if score >= HYPE_CUTOFF:

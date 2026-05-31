@@ -1,7 +1,11 @@
 import streamlit as st
 
 from playlist_logic import (
+    CHILL_SCORE,
     DEFAULT_PROFILE,
+    GENRE_MOODS,
+    HYPE_SCORE,
+    MIXED_SCORE,
     Song,
     build_playlists,
     compute_playlist_stats,
@@ -19,6 +23,9 @@ def init_state():
         st.session_state.songs = default_songs()
     if "profile" not in st.session_state:
         st.session_state.profile = dict(DEFAULT_PROFILE)
+    # Seed the editable genre->mood map from the built-in defaults.
+    if "genre_moods" not in st.session_state.profile:
+        st.session_state.profile["genre_moods"] = dict(GENRE_MOODS)
     if "history" not in st.session_state:
         st.session_state.history = []
 
@@ -233,8 +240,9 @@ def profile_sidebar():
     profile["hype_min_energy"] = st.session_state["hype_min_slider"]
     profile["chill_max_energy"] = st.session_state["chill_max_slider"]
 
-    genre_options = ["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"]
-    saved_genre = profile.get("favorite_genre", genre_options[0])
+    # Offer whatever genres the user has registered in the genre->mood map.
+    genre_options = sorted(profile.get("genre_moods", {}).keys())
+    saved_genre = profile.get("favorite_genre", genre_options[0] if genre_options else "")
     # selectbox restores a previous choice via index, so look up where the
     # saved genre sits in the list (fall back to the first option if missing).
     genre_index = (
@@ -262,7 +270,7 @@ def add_song_sidebar():
     artist = st.sidebar.text_input("Artist")
     genre = st.sidebar.selectbox(
         "Genre",
-        options=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"],
+        options=sorted(st.session_state.profile["genre_moods"].keys()),
     )
     energy = st.sidebar.slider("Energy", min_value=1, max_value=10, value=5)
     tags_text = st.sidebar.text_input("Tags (comma separated)")
@@ -283,6 +291,34 @@ def add_song_sidebar():
             all_songs = st.session_state.songs[:]
             all_songs.append(normalized)
             st.session_state.songs = all_songs
+
+
+def manage_genres_sidebar():
+    """Let the user register new genres and assign each a mood bucket."""
+    st.sidebar.header("Manage genres")
+
+    genre_moods = st.session_state.profile["genre_moods"]
+
+    # Map between the human-facing bucket names and their numeric mood scores.
+    score_to_label = {HYPE_SCORE: "Hype", MIXED_SCORE: "Mixed", CHILL_SCORE: "Chill"}
+    label_to_score = {label: score for score, label in score_to_label.items()}
+
+    # Show the current genre -> bucket assignments.
+    for name in sorted(genre_moods):
+        label = score_to_label.get(genre_moods[name], "Mixed")
+        st.sidebar.write(f"- {name}: {label}")
+
+    new_genre = st.sidebar.text_input("New genre name", key="new_genre_name")
+    bucket = st.sidebar.selectbox(
+        "Mood bucket",
+        options=["Hype", "Mixed", "Chill"],
+        key="new_genre_bucket",
+    )
+
+    if st.sidebar.button("Add genre"):
+        name = new_genre.strip().lower()
+        if name:
+            genre_moods[name] = label_to_score[bucket]
 
 
 def playlist_tabs(playlists):
@@ -416,6 +452,7 @@ def main():
     init_state()
     profile_sidebar()
     add_song_sidebar()
+    manage_genres_sidebar()
     clear_controls()
 
     profile = st.session_state.profile
