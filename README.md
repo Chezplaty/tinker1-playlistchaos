@@ -62,6 +62,8 @@ As you explore, write down at least five things that feel confusing, inconsisten
 
 5. It is just confusing overall what determines a song as chill or hype. Hype min energy and chill max energy are not great indicators of how the songs are sorted.
 
+6. Hype ratio is always 1.00
+
 ### 2. Ask AI for help understanding the code  
 
 Pick one issue from your list. Use an AI coding assistant to:
