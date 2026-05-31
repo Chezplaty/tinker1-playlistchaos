@@ -224,7 +224,9 @@ def search_songs(
 
     for song in songs:
         value = str(song.get(field, "")).lower()
-        if value and value in q:
+        # Match when the query appears inside the field (so partial searches
+        # work), not when the field appears inside the query.
+        if value and q in value:
             filtered.append(song)
 
     return filtered
