@@ -292,14 +292,14 @@ def render_playlist(label, songs):
             f"[{tags}]"
         )
 
-
+#added a mixed option too so users can just pick from mixed songs
 def lucky_section(playlists):
     """Render the lucky pick controls and result."""
     st.header("Lucky pick")
 
     mode = st.selectbox(
         "Pick from",
-        options=["any", "hype", "chill"],
+        options=["any", "hype", "chill", "mixed"],
         index=0,
     )
 
