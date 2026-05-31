@@ -194,26 +194,44 @@ def profile_sidebar():
         value=str(profile.get("name", "")),
     )
 
+    # Keep the two thresholds from overlapping: chill_max must stay strictly
+    # below hype_min so the bands never cross and "Mixed" stays well defined.
+    current_chill = int(profile.get("chill_max_energy", 3))
+    current_hype = int(profile.get("hype_min_energy", 7))
+
     col1, col2 = st.sidebar.columns(2)
     with col1:
+        # Hype min can't drop to or below the current chill max.
+        hype_floor = current_chill + 1
+        hype_value = max(current_hype, hype_floor)
         profile["hype_min_energy"] = st.sidebar.slider(
             "Hype min energy",
-            min_value=1,
+            min_value=hype_floor,
             max_value=10,
-            value=int(profile.get("hype_min_energy", 7)),
+            value=hype_value,
         )
     with col2:
+        # Chill max can't reach the hype min just chosen above.
+        chill_ceiling = profile["hype_min_energy"] - 1
+        chill_value = min(current_chill, chill_ceiling)
         profile["chill_max_energy"] = st.sidebar.slider(
             "Chill max energy",
             min_value=1,
-            max_value=10,
-            value=int(profile.get("chill_max_energy", 3)),
+            max_value=chill_ceiling,
+            value=chill_value,
         )
 
+    genre_options = ["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"]
+    saved_genre = profile.get("favorite_genre", genre_options[0])
+    # selectbox restores a previous choice via index, so look up where the
+    # saved genre sits in the list (fall back to the first option if missing).
+    genre_index = (
+        genre_options.index(saved_genre) if saved_genre in genre_options else 0
+    )
     profile["favorite_genre"] = st.sidebar.selectbox(
         "Favorite genre",
-        options=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"],
-        index=0,
+        options=genre_options,
+        index=genre_index,
     )
 
     profile["include_mixed"] = st.sidebar.checkbox(
