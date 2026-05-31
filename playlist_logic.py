@@ -176,9 +176,10 @@ def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
     total = len(all_songs)
     hype_ratio = len(hype) / total if total > 0 else 0.0
 
+    # Average energy across the whole library, not just the hype songs.
     avg_energy = 0.0
     if all_songs:
-        total_energy = sum(song.get("energy", 0) for song in hype)
+        total_energy = sum(song.get("energy", 0) for song in all_songs)
         avg_energy = total_energy / len(all_songs)
 
     top_artist, top_count = most_common_artist(all_songs)
