@@ -50,6 +50,18 @@ Run the app and try things out:
 
 As you explore, write down at least five things that feel confusing, inconsistent, or strange. These might be bugs, quirks, or unexpected design decisions.
 
+1. The hype min energy takes majority precedence in determining what songs are considered hype or chill.
+    - Ex: Hype set to 1, no chill or mixed songs.
+    - Ex: Chill set to 1, some hype and mixed songs.
+
+2. Other things like genres do not seem to have as much input as the energy level
+
+3. Searching playlist by artist has to include full artist title. It should match by whatever characters user already has.
+
+4. Lucky pick never picks from the mixed songs category. It only picks from hype or chill.
+
+5. It is just confusing overall what determines a song as chill or hype. Hype min energy and chill max energy are not great indicators of how the songs are sorted.
+
 ### 2. Ask AI for help understanding the code  
 
 Pick one issue from your list. Use an AI coding assistant to:
