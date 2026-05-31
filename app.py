@@ -300,13 +300,7 @@ def manage_genres_sidebar():
     genre_moods = st.session_state.profile["genre_moods"]
 
     # Map between the human-facing bucket names and their numeric mood scores.
-    score_to_label = {HYPE_SCORE: "Hype", MIXED_SCORE: "Mixed", CHILL_SCORE: "Chill"}
-    label_to_score = {label: score for score, label in score_to_label.items()}
-
-    # Show the current genre -> bucket assignments.
-    for name in sorted(genre_moods):
-        label = score_to_label.get(genre_moods[name], "Mixed")
-        st.sidebar.write(f"- {name}: {label}")
+    label_to_score = {"Hype": HYPE_SCORE, "Mixed": MIXED_SCORE, "Chill": CHILL_SCORE}
 
     new_genre = st.sidebar.text_input("New genre name", key="new_genre_name")
     bucket = st.sidebar.selectbox(
