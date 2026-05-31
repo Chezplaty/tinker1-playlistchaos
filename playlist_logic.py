@@ -57,25 +57,69 @@ def normalize_song(raw: Song) -> Song:
     }
 
 
-def classify_song(song: Song, profile: Dict[str, object]) -> str:
-    """Return a mood label given a song and user profile."""
-    energy = song.get("energy", 0)
-    genre = song.get("genre", "")
-    title = song.get("title", "")
+# Mood is scored on a 0..1 scale: Chill = 0.0, Mixed = 0.5, Hype = 1.0.
+CHILL_SCORE = 0.0
+MIXED_SCORE = 0.5
+HYPE_SCORE = 1.0
 
+# How much each factor contributes to the blended mood score.
+ENERGY_WEIGHT = 0.7
+GENRE_WEIGHT = 0.3
+
+# Final bands for the blended score: >= HYPE_CUTOFF is Hype, <= CHILL_CUTOFF is
+# Chill, anything in between is Mixed. With the 0.7/0.3 split these cutoffs let
+# genre tip an energy-ambiguous (Mixed-energy) song up or down, while a clearly
+# hype or chill energy still wins on its own.
+HYPE_CUTOFF = 0.6
+CHILL_CUTOFF = 0.4
+
+# Which mood each genre leans toward. Unlisted genres ("other", anything new)
+# fall back to the neutral middle.
+GENRE_MOODS = {
+    "rock": HYPE_SCORE,
+    "pop": HYPE_SCORE,
+    "electronic": HYPE_SCORE,
+    "punk": HYPE_SCORE,
+    "party": HYPE_SCORE,
+    "lofi": CHILL_SCORE,
+    "ambient": CHILL_SCORE,
+    "jazz": MIXED_SCORE,
+}
+
+
+def energy_mood_score(energy: object, profile: Dict[str, object]) -> float:
+    """Score a song's energy on the 0 (chill) .. 1 (hype) mood scale."""
     hype_min_energy = profile.get("hype_min_energy", 7)
     chill_max_energy = profile.get("chill_max_energy", 3)
-    favorite_genre = profile.get("favorite_genre", "")
 
-    hype_keywords = ["rock", "punk", "party"]
-    chill_keywords = ["lofi", "ambient", "sleep"]
+    if energy >= hype_min_energy:
+        return HYPE_SCORE
+    if energy <= chill_max_energy:
+        return CHILL_SCORE
+    return MIXED_SCORE
 
-    is_hype_keyword = any(k in genre for k in hype_keywords)
-    is_chill_keyword = any(k in title for k in chill_keywords)
 
-    if genre == favorite_genre or energy >= hype_min_energy or is_hype_keyword:
+def genre_mood_score(genre: str) -> float:
+    """Score a song's genre on the 0 (chill) .. 1 (hype) mood scale."""
+    return GENRE_MOODS.get(genre, MIXED_SCORE)
+
+
+def classify_song(song: Song, profile: Dict[str, object]) -> str:
+    """Return a mood label from a weighted blend of energy and genre.
+
+    score = 0.7 * energy_score + 0.3 * genre_score, then bucketed into a band.
+    """
+    energy = song.get("energy", 0)
+    genre = song.get("genre", "")
+
+    score = (
+        ENERGY_WEIGHT * energy_mood_score(energy, profile)
+        + GENRE_WEIGHT * genre_mood_score(genre)
+    )
+
+    if score >= HYPE_CUTOFF:
         return "Hype"
-    if energy <= chill_max_energy or is_chill_keyword:
+    if score <= CHILL_CUTOFF:
         return "Chill"
     return "Mixed"
 
